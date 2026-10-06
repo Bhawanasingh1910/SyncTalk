@@ -1,76 +1,62 @@
-import React, { useContext, useState } from 'react'
-import withAuth from '../utils/withAuth'
-import { useNavigate } from 'react-router-dom'
-import "../App.css";
-import { Button, IconButton, TextField } from '@mui/material';
-import RestoreIcon from '@mui/icons-material/Restore';
+import React, { useContext, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import withAuth from '../utils/withAuth';
 import { AuthContext } from '../contexts/AuthContext';
+import Brand from '../components/Brand';
+
+const clean = (v) => v.trim().replace(/[^a-zA-Z0-9_-]/g, '');
+const randomCode = () => Math.random().toString(36).slice(2, 8);
 
 function HomeComponent() {
+    const navigate = useNavigate();
+    const { addToUserHistory } = useContext(AuthContext);
+    const [meetingCode, setMeetingCode] = useState('');
+    const [busy, setBusy] = useState(false);
 
+    const go = async (rawCode) => {
+        const code = clean(rawCode);
+        if (!code) return;
+        setBusy(true);
+        try { await addToUserHistory(code); } catch (e) { /* history is optional; never block joining */ }
+        navigate(`/${code}`);
+    };
 
-    let navigate = useNavigate();
-    const [meetingCode, setMeetingCode] = useState("");
-
-
-    const {addToUserHistory} = useContext(AuthContext);
-    let handleJoinVideoCall = async () => {
-        await addToUserHistory(meetingCode)
-        navigate(`/${meetingCode}`)
-    }
+    const logout = () => {
+        localStorage.removeItem('token');
+        navigate('/auth');
+    };
 
     return (
-        <>
-
-            <div className="navBar">
-
-                <div style={{ display: "flex", alignItems: "center" }}>
-
-                    <h2>Apna Video Call</h2>
-                </div>
-
-                <div style={{ display: "flex", alignItems: "center" }}>
-                    <IconButton onClick={
-                        () => {
-                            navigate("/history")
-                        }
-                    }>
-                        <RestoreIcon />
-                    </IconButton>
-                    <p>History</p>
-
-                    <Button onClick={() => {
-                        localStorage.removeItem("token")
-                        navigate("/auth")
-                    }}>
-                        Logout
-                    </Button>
-                </div>
-
-
-            </div>
-
-
-            <div className="meetContainer">
-                <div className="leftPanel">
-                    <div>
-                        <h2>Providing Quality Video Call Just Like Quality Education</h2>
-
-                        <div style={{ display: 'flex', gap: "10px" }}>
-
-                            <TextField onChange={e => setMeetingCode(e.target.value)} id="outlined-basic" label="Meeting Code" variant="outlined" />
-                            <Button onClick={handleJoinVideoCall} variant='contained'>Join</Button>
-
-                        </div>
+        <div className="page">
+            <div className="container">
+                <nav className="nav">
+                    <Brand />
+                    <div className="nav-actions">
+                        <button className="btn btn-ghost btn-sm" onClick={() => navigate('/history')}>History</button>
+                        <button className="btn btn-dark btn-sm" onClick={logout}>Logout</button>
                     </div>
-                </div>
-                <div className='rightPanel'>
-                    <img srcSet='/logo3.png' alt="" />
-                </div>
+                </nav>
+
+                <section className="home-main">
+                    <div>
+                        <span className="eyebrow">Your dashboard</span>
+                        <h1>Start a meeting, or step into one.</h1>
+                        <p className="muted" style={{ fontSize: '1.1rem', maxWidth: 460 }}>Create a fresh room in one click and share the code, or enter a code you've been given.</p>
+                    </div>
+
+                    <div className="card join-card">
+                        <h3>Join a meeting</h3>
+                        <form className="join-row" onSubmit={(e) => { e.preventDefault(); go(meetingCode); }}>
+                            <input className="input" placeholder="Enter meeting code" value={meetingCode} onChange={(e) => setMeetingCode(e.target.value)} />
+                            <button className="btn btn-gold" type="submit" disabled={busy || !clean(meetingCode)}>Join</button>
+                        </form>
+                        <div className="divider">or</div>
+                        <button className="btn btn-dark" style={{ width: '100%' }} disabled={busy} onClick={() => go(randomCode())}>New meeting</button>
+                    </div>
+                </section>
             </div>
-        </>
-    )
+        </div>
+    );
 }
 
-
-export default withAuth(HomeComponent)
+export default withAuth(HomeComponent);

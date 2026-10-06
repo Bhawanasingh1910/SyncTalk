@@ -1,27 +1,18 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom"
+import { useNavigate } from "react-router-dom";
 
-const withAuth = (WrappedComponent ) => {
+const withAuth = (WrappedComponent) => {
     const AuthComponent = (props) => {
-        const router = useNavigate();
-
-        const isAuthenticated = () => {
-            if(localStorage.getItem("token")) {
-                return true;
-            } 
-            return false;
-        }
+        const navigate = useNavigate();
+        const authed = !!localStorage.getItem("token");
 
         useEffect(() => {
-            if(!isAuthenticated()) {
-                router("/auth")
-            }
-        }, [])
+            if (!authed) navigate("/auth");
+        }, [authed, navigate]);
 
-        return <WrappedComponent {...props} />
-    }
-
+        return authed ? <WrappedComponent {...props} /> : null;
+    };
     return AuthComponent;
-}
+};
 
 export default withAuth;

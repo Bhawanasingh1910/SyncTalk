@@ -1,88 +1,68 @@
-import React, { useContext, useEffect, useState } from 'react'
-import { AuthContext } from '../contexts/AuthContext'
+import React, { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Card from '@mui/material/Card';
-import Box from '@mui/material/Box';
-import CardActions from '@mui/material/CardActions';
-import CardContent from '@mui/material/CardContent';
-import Button from '@mui/material/Button';
-import Typography from '@mui/material/Typography';
-import HomeIcon from '@mui/icons-material/Home';
+import { AuthContext } from '../contexts/AuthContext';
+import Brand from '../components/Brand';
+import withAuth from '../utils/withAuth';
 
-import { IconButton } from '@mui/material';
-export default function History() {
+const formatDate = (d) => {
+    const date = new Date(d);
+    return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+};
 
-
+function History() {
     const { getHistoryOfUser } = useContext(AuthContext);
-
-    const [meetings, setMeetings] = useState([])
-
-
-    const routeTo = useNavigate();
+    const navigate = useNavigate();
+    const [meetings, setMeetings] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchHistory = async () => {
+        (async () => {
             try {
-                const history = await getHistoryOfUser();
-                setMeetings(history);
-            } catch {
-                // IMPLEMENT SNACKBAR
-            }
-        }
-
-        fetchHistory();
-    }, [])
-
-    let formatDate = (dateString) => {
-
-        const date = new Date(dateString);
-        const day = date.getDate().toString().padStart(2, "0");
-        const month = (date.getMonth() + 1).toString().padStart(2, "0")
-        const year = date.getFullYear();
-
-        return `${day}/${month}/${year}`
-
-    }
+                const data = await getHistoryOfUser();
+                if (Array.isArray(data)) setMeetings([...data].reverse());
+            } catch (e) { /* show empty state */ }
+            setLoading(false);
+        })();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     return (
-        <div>
+        <div className="page">
+            <div className="container">
+                <nav className="nav">
+                    <Brand />
+                    <button className="btn btn-dark btn-sm" onClick={() => navigate('/home')}>Dashboard</button>
+                </nav>
 
-            <IconButton onClick={() => {
-                routeTo("/home")
-            }}>
-                <HomeIcon />
-            </IconButton >
-            {
-                (meetings.length !== 0) ? meetings.map((e, i) => {
-                    return (
+                <div className="hist-head">
+                    <span className="eyebrow">Activity</span>
+                    <h1 style={{ marginTop: 14 }}>Meeting history</h1>
+                </div>
 
-                        <>
-
-
-                            <Card key={i} variant="outlined">
-
-
-                                <CardContent>
-                                    <Typography sx={{ fontSize: 14 }} color="text.secondary" gutterBottom>
-                                        Code: {e.meetingCode}
-                                    </Typography>
-
-                                    <Typography sx={{ mb: 1.5 }} color="text.secondary">
-                                        Date: {formatDate(e.date)}
-                                    </Typography>
-
-                                </CardContent>
-
-
-                            </Card>
-
-
-                        </>
-                    )
-                }) : <></>
-
-            }
-
+                {loading ? (
+                    <p className="muted">Loading your meetings…</p>
+                ) : meetings.length === 0 ? (
+                    <div className="card empty">
+                        <h3>No meetings yet</h3>
+                        <p className="muted" style={{ marginBottom: 20 }}>Meetings you start or join will appear here.</p>
+                        <button className="btn btn-gold" onClick={() => navigate('/home')}>Start a meeting</button>
+                    </div>
+                ) : (
+                    <div className="hist-list">
+                        {meetings.map((m) => (
+                            <div className="card hist-item" key={m._id}>
+                                <div>
+                                    <div className="hist-code">{m.meetingCode}</div>
+                                    <div className="muted" style={{ fontSize: '.88rem' }}>{formatDate(m.date)}</div>
+                                </div>
+                                <button className="btn btn-line btn-sm" onClick={() => navigate(`/${m.meetingCode}`)}>Rejoin</button>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
         </div>
-    )
+    );
 }
+
+export default withAuth(History);

@@ -1,7 +1,3 @@
-let IS_PROD = false;
-
-const server = IS_PROD
-    ? "YOUR_SYNCMEET_BACKEND_URL"
-    : "http://localhost:8000";
-
+let IS_PROD = true;
+const server = IS_PROD ? "https://synctalk-backend-8q5i.onrender.com" : "http://localhost:8000";
 export default server;
