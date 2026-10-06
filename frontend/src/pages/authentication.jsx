@@ -1,175 +1,89 @@
-import * as React from 'react';
-import Avatar from '@mui/material/Avatar';
-import Button from '@mui/material/Button';
-import CssBaseline from '@mui/material/CssBaseline';
-import TextField from '@mui/material/TextField';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Checkbox from '@mui/material/Checkbox';
-import Link from '@mui/material/Link';
-import Paper from '@mui/material/Paper';
-import Box from '@mui/material/Box';
-import Grid from '@mui/material/Grid';
-import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import Typography from '@mui/material/Typography';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
+import React, { useContext, useState } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
-import { Snackbar } from '@mui/material';
-
-
-
-// TODO remove, this demo shouldn't need to reset the theme.
-
-const defaultTheme = createTheme();
+import Brand from '../components/Brand';
 
 export default function Authentication() {
+    const { handleRegister, handleLogin } = useContext(AuthContext);
 
-    
+    const [mode, setMode] = useState('login'); // 'login' | 'register'
+    const [name, setName] = useState('');
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const [notice, setNotice] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const [username, setUsername] = React.useState();
-    const [password, setPassword] = React.useState();
-    const [name, setName] = React.useState();
-    const [error, setError] = React.useState();
-    const [message, setMessage] = React.useState();
+    const switchMode = (m) => { setMode(m); setError(''); setNotice(''); };
 
-
-    const [formState, setFormState] = React.useState(0);
-
-    const [open, setOpen] = React.useState(false)
-
-
-    const { handleRegister, handleLogin } = React.useContext(AuthContext);
-
-    let handleAuth = async () => {
+    const submit = async (e) => {
+        e.preventDefault();
+        setError('');
+        setNotice('');
+        if (!username.trim() || !password || (mode === 'register' && !name.trim())) {
+            setError('Please fill in all fields.');
+            return;
+        }
+        setLoading(true);
         try {
-            if (formState === 0) {
-
-                let result = await handleLogin(username, password)
-
-
-            }
-            if (formState === 1) {
-                let result = await handleRegister(name, username, password);
-                console.log(result);
-                setUsername("");
-                setMessage(result);
-                setOpen(true);
-                setError("")
-                setFormState(0)
-                setPassword("")
+            if (mode === 'login') {
+                await handleLogin(username.trim(), password);
+            } else {
+                const msg = await handleRegister(name.trim(), username.trim(), password);
+                setNotice(`${msg || 'Account created'} — you can sign in now.`);
+                setPassword('');
+                setMode('login');
             }
         } catch (err) {
-
-            console.log(err);
-            let message = (err.response.data.message);
-            setError(message);
+            setError(err?.response?.data?.message || 'Cannot reach the server. Please try again in a moment.');
+        } finally {
+            setLoading(false);
         }
-    }
-
+    };
 
     return (
-        <ThemeProvider theme={defaultTheme}>
-            <Grid container component="main" sx={{ height: '100vh' }}>
-                <CssBaseline />
-                <Grid
-                    item
-                    xs={false}
-                    sm={4}
-                    md={7}
-                    sx={{
-                        backgroundImage: 'url(https://source.unsplash.com/random?wallpapers)',
-                        backgroundRepeat: 'no-repeat',
-                        backgroundColor: (t) =>
-                            t.palette.mode === 'light' ? t.palette.grey[50] : t.palette.grey[900],
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center',
-                    }}
-                />
-                <Grid item xs={12} sm={8} md={5} component={Paper} elevation={6} square>
-                    <Box
-                        sx={{
-                            my: 8,
-                            mx: 4,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                        }}
-                    >
-                        <Avatar sx={{ m: 1, bgcolor: 'secondary.main' }}>
-                            <LockOutlinedIcon />
-                        </Avatar>
+        <div className="auth">
+            <aside className="auth-side">
+                <Brand light />
+                <div>
+                    <h2>Meet with <em>clarity</em>, leave with confidence.</h2>
+                    <p>Sign in to create meetings, keep your history and jump back into any conversation.</p>
+                </div>
+                <span style={{ opacity: .6, fontSize: '.85rem', position: 'relative', zIndex: 1 }}>SyncTalk · Video meetings, beautifully simple</span>
+            </aside>
 
+            <main className="auth-main page">
+                <div className="card auth-card">
+                    <h1>{mode === 'login' ? 'Welcome back' : 'Create account'}</h1>
+                    <p className="muted">{mode === 'login' ? 'Sign in to continue to SyncTalk.' : 'Join SyncTalk in under a minute.'}</p>
 
-                        <div>
-                            <Button variant={formState === 0 ? "contained" : ""} onClick={() => { setFormState(0) }}>
-                                Sign In
-                            </Button>
-                            <Button variant={formState === 1 ? "contained" : ""} onClick={() => { setFormState(1) }}>
-                                Sign Up
-                            </Button>
-                        </div>
+                    <div className="tabs">
+                        <button type="button" className={mode === 'login' ? 'on' : ''} onClick={() => switchMode('login')}>Sign In</button>
+                        <button type="button" className={mode === 'register' ? 'on' : ''} onClick={() => switchMode('register')}>Sign Up</button>
+                    </div>
 
-                        <Box component="form" noValidate sx={{ mt: 1 }}>
-                            {formState === 1 ? <TextField
-                                margin="normal"
-                                required
-                                fullWidth
-                                id="username"
-                                label="Full Name"
-                                name="username"
-                                value={name}
-                                autoFocus
-                                onChange={(e) => setName(e.target.value)}
-                            /> : <></>}
+                    <form onSubmit={submit} noValidate>
+                        {mode === 'register' && (
+                            <label className="field"><span>Full name</span>
+                                <input className="input" value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" autoFocus />
+                            </label>
+                        )}
+                        <label className="field"><span>Username</span>
+                            <input className="input" value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" autoFocus={mode === 'login'} />
+                        </label>
+                        <label className="field"><span>Password</span>
+                            <input className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} />
+                        </label>
 
-                            <TextField
-                                margin="normal"
-                                required
-                                fullWidth
-                                id="username"
-                                label="Username"
-                                name="username"
-                                value={username}
-                                autoFocus
-                                onChange={(e) => setUsername(e.target.value)}
+                        {error && <p className="error">{error}</p>}
+                        {notice && <p className="success">{notice}</p>}
 
-                            />
-                            <TextField
-                                margin="normal"
-                                required
-                                fullWidth
-                                name="password"
-                                label="Password"
-                                value={password}
-                                type="password"
-                                onChange={(e) => setPassword(e.target.value)}
-
-                                id="password"
-                            />
-
-                            <p style={{ color: "red" }}>{error}</p>
-
-                            <Button
-                                type="button"
-                                fullWidth
-                                variant="contained"
-                                sx={{ mt: 3, mb: 2 }}
-                                onClick={handleAuth}
-                            >
-                                {formState === 0 ? "Login " : "Register"}
-                            </Button>
-
-                        </Box>
-                    </Box>
-                </Grid>
-            </Grid>
-
-            <Snackbar
-
-                open={open}
-                autoHideDuration={4000}
-                message={message}
-            />
-
-        </ThemeProvider>
+                        <button className="btn btn-gold" style={{ width: '100%' }} type="submit" disabled={loading}>
+                            {loading ? 'Please wait…' : mode === 'login' ? 'Sign In' : 'Create account'}
+                        </button>
+                        {loading && <p className="muted" style={{ fontSize: '.8rem', marginTop: 10, textAlign: 'center' }}>The server may take a few seconds to wake up.</p>}
+                    </form>
+                </div>
+            </main>
+        </div>
     );
 }
